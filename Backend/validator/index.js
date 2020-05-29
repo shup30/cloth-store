@@ -1,9 +1,28 @@
 exports.createProductValidator = (req, res, next) =>  {
-    req.check("name", "write a name").notEmpty();
     req.check("title", "name must be between 4 to 150 characters").isLength({
         min: 4,
         max: 150
     });
+    req.check("price", "Price must be Number").isNumeric();
+    //Check For Errors
+    const errors =  req.validationErrors()
+    //If errors Show the first one as they happen
+    if(errors) {
+        const firstError = errors.map((error)=> error.msg[0])
+        return res.status(400).json({error: firstError})
+    }
+    // Proceed To next middleware
+    next();
+    
+};
+
+
+exports.createQuotationValidator = (req, res, next) =>  {
+    req.check("title", "name must be between 4 to 150 characters").isLength({
+        min: 4,
+        max: 150
+    });
+    req.check("price", "Price must be Number").isNumeric();
     //Check For Errors
     const errors =  req.validationErrors()
     //If errors Show the first one as they happen
@@ -35,6 +54,8 @@ exports.userSignupValidator = (req, res, next) => {
     .withMessage("Password must contain at least 6 characters")
     .matches(/\d/)
     .withMessage("Password must Contain a Numbers");
+    //check for role
+    req.check("role", "Role is required").notEmpty();
     // check for Errors
     const errors = req.validationErrors();
     if (errors) {

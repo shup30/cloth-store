@@ -27,7 +27,7 @@ router.delete('/product/:productId', requireSignin, isPoster, deleteProduct);
 
 // any route containing :userId, our app will first execute userById()
 router.param('userId', userById);
-// any route containing :postId, our app will first execute postById()
+// any route containing :productId, our app will first execute postById()
 router.param('productId', productsById);
 
 module.exports = router;

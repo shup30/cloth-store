@@ -26,6 +26,7 @@ mongoose.connection.on("error", (err) => {
 app.use(express.static(path.join(__dirname, "/FRONTEND/build")));
 
 const productRoutes = require("./routes/product");
+const quotationRoutes = require("./routes/quotation");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
 
@@ -37,6 +38,7 @@ app.use(cookieParser());
 app.use(expressValidator());
 app.use(cors());
 app.use("/api", productRoutes);
+app.use("/api", quotationRoutes);
 app.use("/api", authRoutes);
 app.use("/api", userRoutes);
 // app.use('/sitemap', express.static(path.join(__dirname, 'sitemap.xml')))

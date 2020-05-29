@@ -1,21 +1,18 @@
-const Product = require("../Models/product");
+const Quotation = require("../Models/quotation");
 const formidable = require("formidable");
 const fs = require("fs");
 const _ = require("lodash");
 
-exports.productsById = (req, res, next, id) => {
-  Product.findById(id)
-    .populate("postedBy", "_id name")
-    .populate("comments.postedBy", "_id name")
+exports.quotationById = (req, res, next, id) => {
+  Quotation.findById(id)
     .populate("postedBy", "_id name role")
-    .select("_id type subtype title description created price")
-    .exec((err, product) => {
-      if (err || !product) {
+    .exec((err, quotation) => {
+      if (err || !quotation) {
         return res.status(400).json({
           error: err,
         });
       }
-      req.product = product;
+      req.quotation = quotation;
       next();
     });
 };
@@ -34,35 +31,35 @@ exports.getPosts = (req, res) => {
         .catch(err => console.log(err));
 };
 */
-
 // with pagination
-exports.getProducts = async (req, res) => {
+exports.getQuotations = async (req, res) => {
   // get current page from req.query or use default value of 1
   const currentPage = req.query.page || 1;
   // return 3 posts per page
   const perPage = 6;
   let totalItems;
 
-  const products = await Product.find()
+  const quotation = await Quotation.find()
     // countDocuments() gives you total count of posts
     .countDocuments()
     .then((count) => {
       totalItems = count;
-      return Product.find()
+      return Quotation.find()
         .skip((currentPage - 1) * perPage)
         .populate("postedBy", "_id name")
-        .populate("comments.postedBy", "_id name")
-        .select("_id type subtype title created price description")
+        .select(
+          "title cmp_name issuer_name issued_to details created item description qty price total"
+        )
         .limit(perPage)
         .sort({ created: -1 });
     })
-    .then((products) => {
-      res.status(200).json(products);
+    .then((quotation) => {
+      res.status(200).json(quotation);
     })
     .catch((err) => console.log(err));
 };
 
-exports.createProduct = (req, res, next) => {
+exports.createQuotation = (req, res, next) => {
   let form = new formidable.IncomingForm();
   form.keepExtensions = true;
   form.parse(req, (err, fields, files) => {
@@ -71,17 +68,17 @@ exports.createProduct = (req, res, next) => {
         error: "Image could not be uploaded",
       });
     }
-    let product = new Product(fields);
+    let quotation = new Quotation(fields);
 
     req.profile.hashed_password = undefined;
     req.profile.salt = undefined;
-    product.postedBy = req.profile;
+    quotation.postedBy = req.profile;
 
     if (files.photo) {
-      product.photo.data = fs.readFileSync(files.photo.path);
-      product.photo.contentType = files.photo.type;
+      quotation.photo.data = fs.readFileSync(files.photo.path);
+      quotation.photo.contentType = files.photo.type;
     }
-    product.save((err, result) => {
+    quotation.save((err, result) => {
       if (err) {
         return res.status(400).json({
           error: err,
@@ -92,27 +89,27 @@ exports.createProduct = (req, res, next) => {
   });
 };
 
-exports.productsByUser = (req, res) => {
-  Product.find({ postedBy: req.profile._id })
+exports.quotationByUser = (req, res) => {
+  Quotation.find({ postedBy: req.profile._id })
     .populate("postedBy", "_id name")
-    .select("_id type subtype title created price description")
+    .select("title cmp_name issuer_name issued_to details created item description qty price total")
     .sort("_created")
-    .exec((err, products) => {
+    .exec((err, quotation) => {
       if (err) {
         return res.status(400).json({
           error: err,
         });
       }
-      res.json(products);
+      res.json(quotation);
     });
 };
 
 exports.isPoster = (req, res, next) => {
   let sameUser =
-    req.product && req.auth && req.product.postedBy._id == req.auth._id;
-  let adminUser = req.product && req.auth && req.auth.role === "admin";
+    req.quotation && req.auth && req.quotation.postedBy._id == req.auth._id;
+  let adminUser = req.quotation && req.auth && req.auth.role === "admin";
 
-  console.log("req.post ", req.product, " req.auth ", req.auth);
+  console.log("req.post ", req.quotation, " req.auth ", req.auth);
   console.log("SAMEUSER: ", sameUser, " ADMINUSER: ", adminUser);
 
   let isPoster = sameUser || adminUser;
@@ -139,7 +136,7 @@ exports.isPoster = (req, res, next) => {
 //     });
 // };
 
-exports.updateProduct = (req, res, next) => {
+exports.updateQuotation = (req, res, next) => {
   let form = new formidable.IncomingForm();
   form.keepExtensions = true;
   form.parse(req, (err, fields, files) => {
@@ -149,45 +146,45 @@ exports.updateProduct = (req, res, next) => {
       });
     }
     // save post
-    let product = req.product;
-    product = _.extend(product, fields);
+    let quotation = req.quotation;
+    quotation = _.extend(quotation, fields);
 
     if (files.photo) {
       product.photo.data = fs.readFileSync(files.photo.path);
       product.photo.contentType = files.photo.type;
     }
 
-    product.save((err, result) => {
+    quotation.save((err, result) => {
       if (err) {
         return res.status(400).json({
           error: err,
         });
       }
-      res.json(product);
+      res.json(quotation);
     });
   });
 };
 
-exports.deleteProduct = (req, res) => {
-  let product = req.product;
-  console.log(req.product);
-  product.remove((err, product) => {
+exports.deleteQuotation = (req, res) => {
+  let quotation = req.quotation;
+  console.log("qt:", quotation);
+  quotation.remove((err, quotation) => {
     if (err) {
       return res.status(400).json({
         error: err,
       });
     }
     res.json({
-      message: "Product deleted successfully",
+      message: "Quotation deleted successfully",
     });
   });
 };
 
-exports.photo = (req, res, next) => {
-  res.set("Content-Type", req.post.photo.contentType);
-  return res.send(req.post.photo.data);
-};
+// exports.photo = (req, res, next) => {
+//     res.set('Content-Type', req.post.photo.contentType);
+//     return res.send(req.post.photo.data);
+// };
 
-exports.singleProduct = (req, res) => {
-  return res.json(req.product);
+exports.singleQuotation = (req, res) => {
+  return res.json(req.quotation);
 };

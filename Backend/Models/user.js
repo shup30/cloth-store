@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   },
   updated: Date,
+  role: {
+    type: String,
+    default: "subscriber"
+}
 });
 
 userSchema
